@@ -40,24 +40,71 @@ class BotManController extends Controller
     public function abmahnen(BotMan $bot, $name) {
 
         $warner = $bot->getUser();
-
-        // Log::info($name);
+        $payload = $bot->getMessage()->getPayload();
+        $slack = new SlackSDK(config('services.slack.oauth'));
         $userId = '';
+
         if (preg_match('/<@(.*?)>/', $name, $match) == 1) {
-            // Log::info($match[1]);
+            // Log::info("User ID: ".$match[1]);
             $userId = $match[1];
 
-            $slack = new SlackSDK(config('services.slack.oauth'));
 
             $user = $slack->users->info(array("user" => $userId));
             $user = $user['user'];
 
-            $bot->reply($user['real_name'].' kriegt ne Abmahnung!');
             $bot->say("Du wurdest von {$warner->getFirstname()} {$warner->getLastname()} abgemahnt!", $userId);
+
+            $slack->chat->postMessage(array(
+                "token" => config('services.slack.oauth'),
+                "channel" => $payload->get('channel'),
+                "text" => "*Das hast du dir verdient!* Abmahnung geht raus an {$name}!",
+                "blocks" => json_encode([
+                    [
+                      "type" => "section",
+                      "text" => [
+                          "type" => "mrkdwn",
+                          "text" => "*Das hast du dir verdient!* Abmahnung geht raus an {$name}!"
+                      ]
+                    ],
+                    [
+                      "type" => "image",
+                      "title" => [
+                          "type" => "plain_text",
+                          "text" => "Abmahnung",
+                          "emoji" => false
+                      ],
+                      "image_url" => "https://i.imgur.com/10lkUdy.gif",
+                      "alt_text" => "Deine Reaktion"
+                    ]
+                  ])
+            ));
 
         } else if ($name == "<!channel>") {
 
-            $bot->reply("Ihr kriegt alle ne Abmahnung von {$warner->getFirstname()} {$warner->getLastname()}!");
+              $slack->chat->postMessage(array(
+                  "token" => config('services.slack.oauth'),
+                  "channel" => $payload->get('channel'),
+                  "text" => "*Das habt ihr euch selbst eingebrockt!*",
+                  "blocks" => json_encode([
+                      [
+                        "type" => "section",
+                        "text" => [
+                            "type" => "mrkdwn",
+                            "text" => "*Das habt ihr euch verdient!* Ihr kriegt alle ne Abmahnung von {$warner->getFirstname()} {$warner->getLastname()}!"
+                        ]
+                      ],
+                      [
+                        "type" => "image",
+                        "title" => [
+                            "type" => "plain_text",
+                            "text" => "Abmahnung",
+                            "emoji" => false
+                        ],
+                        "image_url" => "https://i.imgur.com/10lkUdy.gif",
+                        "alt_text" => "Eure Reaktion"
+                      ]
+                    ])
+              ));
 
         } else {
 
