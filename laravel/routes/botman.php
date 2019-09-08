@@ -18,7 +18,7 @@ $botman->hears('{name} abmahnen', function ($bot, $name) {
   if (preg_match('/<@(.*?)>/', $name, $match) == 1) {
     Log::info($match[1]);
     $userId = $match[1];
-
+    
     $slack = new wrapi\slack\slack(config('services.slack.oauth'));
 
     $user = $slack->users->info(array("user" => $userId));
@@ -36,7 +36,5 @@ $botman->hears('{name} abmahnen', function ($bot, $name) {
     $bot->reply("Sprich halt bitte gescheit mit mir!");
 
   }
-
-
 
 });
